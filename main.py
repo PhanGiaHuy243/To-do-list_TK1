@@ -1,14 +1,4 @@
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/")
-def read_root():
-    return {"message": "Chào bạn! Đây là ứng dụng To-Do List"}
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
+from app.main import app
 
 if __name__ == "__main__":
     import uvicorn
