@@ -1,13 +1,14 @@
 import pytest
-import pytest_asyncio
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import httpx
+from httpx._transports.asgi import ASGITransport
 from app.core.database import Base
-from app.core.models import UserModel
+from app.core.models import UserModel, TodoModel, TagModel
 from app.core.security import hash_password
 from main import app
 from app.core.database import get_db
+import asyncio
 
 # Use in-memory SQLite for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -34,12 +35,13 @@ def db():
     yield TestingSessionLocal()
     
     Base.metadata.drop_all(bind=engine)
+    app.dependency_overrides.clear()
 
-@pytest_asyncio.fixture(scope="function")
-async def client(db):
-    """Create an async test client using httpx with ASGI transport"""
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+@pytest.fixture(scope="function")
+def client(db):
+    """Create a test client using httpx with ASGI transport"""
+    transport = ASGITransport(app=app)
+    with httpx.Client(transport=transport, base_url="http://test") as client:
         yield client
 
 @pytest.fixture(scope="function")
@@ -54,10 +56,10 @@ def test_user(db):
     db.refresh(user)
     return user
 
-@pytest_asyncio.fixture(scope="function")
-async def test_user_token(client):
+@pytest.fixture(scope="function")
+def test_user_token(db, client):
     """Get JWT token for test user"""
-    response = await client.post(
+    response = client.post(
         "/api/v1/auth/register",
         json={"email": "testuser@example.com", "password": "testpass123"}
     )
