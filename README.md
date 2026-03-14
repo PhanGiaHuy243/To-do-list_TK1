@@ -1,22 +1,369 @@
-# To-Do List API
+# Todo List API - Cấp 7 Edition
 
-Dự án tạo API quản lý danh sách công việc (To-Do List) sử dụng FastAPI.
+Complete Todo List REST API built with FastAPI, SQLAlchemy, JWT Auth, and Docker.
 
-## Cấp 0 — Làm quen FastAPI (Hello To-Do)
+## 📋 Features
 
-### Mục tiêu
-Tạo API tối thiểu chạy được với 2 endpoints cơ bản.
+### Cấp 0-1: Basic CRUD
+- ✅ FastAPI basic setup
+- ✅ Full CRUD operations for todos
 
-### Yêu cầu
-- Tạo project FastAPI
-- **Endpoint GET /health** → trả `{"status": "ok"}`
-- **Endpoint GET /** → trả message chào
+### Cấp 2: Advanced Querying
+- ✅ Input validation (Pydantic)
+- ✅ Filtering by `is_done` status
+- ✅ Full-text search by title
+- ✅ Sorting and pagination
 
-### Hướng dẫn chạy
+### Cấp 3: Clean Architecture
+- ✅ Layered architecture: Routers → Services → Repositories → Models
+- ✅ API versioning with `/api/v1` prefix
+- ✅ Dependency injection pattern
 
-1. **Cài đặt dependencies:**
+### Cấp 4: Database Integration
+- ✅ SQLite with SQLAlchemy ORM
+- ✅ Automatic timestamps (`created_at`, `updated_at`)
+- ✅ Alembic database migrations
+- ✅ Data persistence across app restarts
+
+### Cấp 5: Authentication & Multi-User
+- ✅ User registration with email validation
+- ✅ Secure password hashing (bcrypt)
+- ✅ JWT token-based authentication
+- ✅ Role-based access control (ownership checks)
+- ✅ Todo isolation per user (cannot access other users' todos)
+
+### Cấp 6: Advanced Features
+- ✅ Tags (many-to-many relationship)
+- ✅ Due date / deadline support
+- ✅ `/todos/overdue/list` - get overdue todos
+- ✅ `/todos/today/list` - get today's todos
+
+### Cấp 7: Testing & Deployment
+- ✅ Pytest test suite with comprehensive coverage
+- ✅ Docker containerization
+- ✅ Docker Compose for local development
+- ✅ Complete documentation (this README)
+
+## 🚀 Quick Start
+
+### Option 1: Local Development (No Docker)
+
+#### Prerequisites
+- Python 3.10+
+- pip
+
+#### Setup
+
 ```bash
+# Clone repository
+git clone <your-repo-url>
+cd todolist_TK1
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Run database migrations
+alembic upgrade head
+
+# Start development server
+uvicorn main:app --reload
+```
+
+Server will be available at **http://127.0.0.1:8000**
+- Swagger UI: **http://127.0.0.1:8000/docs**
+- ReDoc: **http://127.0.0.1:8000/redoc**
+
+### Option 2: Docker Development
+
+#### Prerequisites
+- Docker
+- Docker Compose
+
+#### Setup
+
+```bash
+# Build and start containers
+docker-compose up -d
+
+# Run migrations inside container
+docker-compose exec app alembic upgrade head
+
+# View logs
+docker-compose logs -f app
+```
+
+Server will be available at **http://localhost:8000**
+
+## 📚 API Endpoints
+
+### Authentication
+
+#### Register User
+```bash
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+Response:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "is_active": true,
+    "created_at": "2026-03-14T..."
+  }
+}
+```
+
+#### Login
+```bash
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+Returns: `access_token` (use in Authorization header)
+
+#### Get Current User
+```bash
+GET /api/v1/auth/me
+Authorization: Bearer <access_token>
+```
+
+### Todos
+
+#### Create Todo
+```bash
+POST /api/v1/todos
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "title": "Learn FastAPI",
+  "description": "Study FastAPI framework",
+  "due_date": "2026-04-01",
+  "tags": ["learning", "python"]
+}
+```
+
+#### Get All Todos
+```bash
+GET /api/v1/todos?limit=10&offset=0&sort=created_at
+Authorization: Bearer <access_token>
+```
+
+Query parameters:
+- `limit`: Number of items per page (default: 10, max: 100)
+- `offset`: Pagination offset (default: 0)
+- `sort`: Sort by field (default: `created_at`, use `-created_at` for descending)
+- `q`: Search by title
+- `is_done`: Filter by completion status (true/false)
+
+#### Get Todo by ID
+``` bash
+GET /api/v1/todos/{todo_id}
+Authorization: Bearer <access_token>
+```
+
+#### Update Todo (Full)
+```bash
+PUT /api/v1/todos/{todo_id}
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "title": "Updated Title",
+  "description": "Updated description",
+  "is_done": false,
+  "due_date": "2026-04-15",
+  "tags": ["updated", "tag"]
+}
+```
+
+#### Partial Update Todo (PATCH)
+```bash
+PATCH /api/v1/todos/{todo_id}
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "is_done": true
+}
+```
+
+#### Mark Todo as Complete
+```bash
+POST /api/v1/todos/{todo_id}/complete
+Authorization: Bearer <access_token>
+```
+
+#### Delete Todo
+```bash
+DELETE /api/v1/todos/{todo_id}
+Authorization: Bearer <access_token>
+```
+
+#### Get Overdue Todos
+```bash
+GET /api/v1/todos/overdue/list?limit=10&offset=0
+Authorization: Bearer <access_token>
+```
+
+#### Get Today's Todos
+```bash
+GET /api/v1/todos/today/list?limit=10&offset=0
+Authorization: Bearer <access_token>
+```
+
+## 🧪 Testing
+
+### Run All Tests
+```bash
+pytest tests/ -v
+```
+
+### Run Specific Test
+```bash
+pytest tests/test_auth.py::test_register_success -v
+```
+
+### Test Coverage
+```bash
+pytest tests/ --cov=app
+```
+
+## 📁 Project Structure
+
+```
+todolist_TK1/
+├── app/
+│   ├── core/
+│   │   ├── models.py            # SQLAlchemy models
+│   │   ├── security.py          # JWT & hashing
+│   │   ├── dependencies.py       # Dependency injection
+│   │   ├── database.py          # DB connection
+│   │   └── config.py            # Configuration
+│   ├── repositories/            # Data access layer
+│   ├── services/                # Business logic
+│   ├── routers/                 # HTTP endpoints
+│   └── schemas/                 # Request/response models
+├── migrations/                  # Database migrations
+├── tests/                       # Test suite
+├── main.py                      # Entry point
+└── README.md                    # This file
+```
+
+## 🔐 Security
+
+- ✅ Password hashing with bcrypt
+- ✅ JWT token authentication
+- ✅ Email validation
+- ✅ User ownership checks
+- ✅ Environment variable secrets
+
+## 📦 Dependencies
+
+See `requirements.txt` for full list
+
+**Key:**
+- fastapi==0.104.1
+- sqlalchemy==2.0.23
+- alembic==1.12.1
+- python-jose[cryptography]==3.3.0
+- passlib[bcrypt]==1.7.4
+- pytest==9.0.2
+
+## 🚀 Deployment
+
+### Docker
+
+```bash
+# Build
+docker build -t todolist-api .
+
+# Run
+docker run -p 8000:8000 todolist-api
+
+# Or with Compose
+docker-compose up
+```
+
+### Production Checklist
+1. Set `DEBUG=false`
+2. Use strong `SECRET_KEY`
+3. Configure CORS
+4. Use PostgreSQL instead of SQLite
+5. Enable HTTPS
+6. Set up monitoring & logging
+
+## 📝 Example Usage
+
+### 1. Register
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@test.com","password":"pass123456"}'
+```
+
+### 2. Create Todo
+```bash
+curl -X POST http://localhost:8000/api/v1/todos \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Learn API","due_date":"2026-04-01","tags":["python"]}'
+```
+
+### 3. Get Todos
+```bash
+curl http://localhost:8000/api/v1/todos \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 4. Get Overdue
+```bash
+curl http://localhost:8000/api/v1/todos/overdue/list \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+## 🎓 Learning Outcomes
+
+After completing this project, you'll understand:
+
+✅ FastAPI fundamentals  
+✅ REST API design patterns  
+✅ SQL & ORM (SQLAlchemy)  
+✅ Database migrations (Alembic)  
+✅ JWT authentication  
+✅ Password hashing & security  
+✅ Clean architecture & layers  
+✅ Unit testing with pytest  
+✅ Docker containerization  
+✅ Multi-user application design  
+
+## 📄 License
+
+MIT - Use freely for learning
 ```
 
 2. **Chạy server:**
