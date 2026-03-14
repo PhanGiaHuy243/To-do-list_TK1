@@ -1,8 +1,10 @@
 from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from app.core.models import TodoModel
+from app.core.models import TodoModel, TagModel
 from app.schemas.todo import TodoCreate, TodoUpdate, TodoPartialUpdate
+from datetime import date, datetime
+from app.repositories.tag import TagRepository
 
 class TodoRepository:
     """Repository quản lý dữ liệu todo từ database"""
@@ -16,9 +18,19 @@ class TodoRepository:
             title=todo_create.title,
             description=todo_create.description,
             is_done=todo_create.is_done,
+            due_date=todo_create.due_date,
             owner_id=owner_id
         )
         self.db.add(db_todo)
+        self.db.flush()  # Flush to get the ID
+        
+        # Add tags if provided
+        if todo_create.tags:
+            tag_repo = TagRepository(self.db)
+            for tag_name in todo_create.tags:
+                tag = tag_repo.get_or_create(tag_name)
+                db_todo.tags.append(tag)
+        
         self.db.commit()
         self.db.refresh(db_todo)
         return db_todo
@@ -72,6 +84,17 @@ class TodoRepository:
             db_todo.title = todo_update.title
             db_todo.description = todo_update.description
             db_todo.is_done = todo_update.is_done
+            db_todo.due_date = todo_update.due_date
+            
+            # Update tags
+            if todo_update.tags is not None:
+                db_todo.tags.clear()
+                if todo_update.tags:
+                    tag_repo = TagRepository(self.db)
+                    for tag_name in todo_update.tags:
+                        tag = tag_repo.get_or_create(tag_name)
+                        db_todo.tags.append(tag)
+            
             self.db.commit()
             self.db.refresh(db_todo)
         return db_todo
@@ -86,6 +109,18 @@ class TodoRepository:
                 db_todo.description = todo_update.description
             if todo_update.is_done is not None:
                 db_todo.is_done = todo_update.is_done
+            if todo_update.due_date is not None:
+                db_todo.due_date = todo_update.due_date
+            
+            # Update tags if provided
+            if todo_update.tags is not None:
+                db_todo.tags.clear()
+                if todo_update.tags:
+                    tag_repo = TagRepository(self.db)
+                    for tag_name in todo_update.tags:
+                        tag = tag_repo.get_or_create(tag_name)
+                        db_todo.tags.append(tag)
+            
             self.db.commit()
             self.db.refresh(db_todo)
         return db_todo
@@ -97,4 +132,28 @@ class TodoRepository:
             self.db.delete(db_todo)
             self.db.commit()
         return db_todo
+    
+    def get_overdue(self, owner_id: int, limit: int = 10, offset: int = 0) -> Tuple[list[TodoModel], int]:
+        """Lấy todos quá hạn (due_date < today, is_done = False)"""
+        today = date.today()
+        query = self.db.query(TodoModel).filter(
+            TodoModel.owner_id == owner_id,
+            TodoModel.is_done == False,
+            TodoModel.due_date < today
+        )
+        total = query.count()
+        items = query.order_by(TodoModel.due_date).offset(offset).limit(limit).all()
+        return items, total
+    
+    def get_today(self, owner_id: int, limit: int = 10, offset: int = 0) -> Tuple[list[TodoModel], int]:
+        """Lấy todos hôm nay (due_date = today, is_done = False)"""
+        today = date.today()
+        query = self.db.query(TodoModel).filter(
+            TodoModel.owner_id == owner_id,
+            TodoModel.is_done == False,
+            TodoModel.due_date == today
+        )
+        total = query.count()
+        items = query.order_by(TodoModel.created_at).offset(offset).limit(limit).all()
+        return items, total
 

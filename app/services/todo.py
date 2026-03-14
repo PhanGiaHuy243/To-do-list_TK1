@@ -62,4 +62,28 @@ class TodoService:
         """Xóa todo"""
         db_todo = self.repository.delete(todo_id, owner_id)
         return Todo.from_orm(db_todo) if db_todo else None
+    
+    def get_overdue_todos(
+        self, owner_id: int, limit: int = 10, offset: int = 0
+    ) -> TodoListResponse:
+        """Lấy todos quá hạn"""
+        items, total = self.repository.get_overdue(owner_id, limit, offset)
+        return TodoListResponse(
+            items=[Todo.from_orm(item) for item in items],
+            total=total,
+            limit=limit,
+            offset=offset
+        )
+    
+    def get_today_todos(
+        self, owner_id: int, limit: int = 10, offset: int = 0
+    ) -> TodoListResponse:
+        """Lấy todos hôm nay"""
+        items, total = self.repository.get_today(owner_id, limit, offset)
+        return TodoListResponse(
+            items=[Todo.from_orm(item) for item in items],
+            total=total,
+            limit=limit,
+            offset=offset
+        )
 

@@ -46,6 +46,28 @@ def get_todos(
         offset=offset
     )
 
+@router.get("/overdue/list", response_model=TodoListResponse)
+def get_overdue_todos(
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Lấy danh sách todos quá hạn"""
+    service = TodoService(db)
+    return service.get_overdue_todos(owner_id=current_user.id, limit=limit, offset=offset)
+
+@router.get("/today/list", response_model=TodoListResponse)
+def get_today_todos(
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Lấy danh sách todos hôm nay"""
+    service = TodoService(db)
+    return service.get_today_todos(owner_id=current_user.id, limit=limit, offset=offset)
+
 @router.get("/{todo_id}", response_model=Todo)
 def get_todo(
     todo_id: int,
