@@ -10,12 +10,13 @@ class TodoRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    def create(self, todo_create: TodoCreate) -> TodoModel:
+    def create(self, owner_id: int, todo_create: TodoCreate) -> TodoModel:
         """Tạo todo mới"""
         db_todo = TodoModel(
             title=todo_create.title,
             description=todo_create.description,
-            is_done=todo_create.is_done
+            is_done=todo_create.is_done,
+            owner_id=owner_id
         )
         self.db.add(db_todo)
         self.db.commit()
@@ -24,14 +25,16 @@ class TodoRepository:
     
     def get_all(
         self,
+        owner_id: int,
         is_done: Optional[bool] = None,
         q: Optional[str] = None,
         sort: str = "created_at",
         limit: int = 10,
         offset: int = 0
     ) -> Tuple[list[TodoModel], int]:
-        """Lấy danh sách todos với filter, search, sort, pagination"""
-        query = self.db.query(TodoModel)
+        """Lấy danh sách todos của user"""
+        # Start with owner filter
+        query = self.db.query(TodoModel).filter(TodoModel.owner_id == owner_id)
         
         # Filter by is_done
         if is_done is not None:
@@ -55,13 +58,16 @@ class TodoRepository:
         
         return items, total
     
-    def get_by_id(self, todo_id: int) -> Optional[TodoModel]:
-        """Lấy todo theo ID"""
-        return self.db.query(TodoModel).filter(TodoModel.id == todo_id).first()
+    def get_by_id(self, todo_id: int, owner_id: int) -> Optional[TodoModel]:
+        """Lấy todo theo ID (check ownership)"""
+        return self.db.query(TodoModel).filter(
+            TodoModel.id == todo_id,
+            TodoModel.owner_id == owner_id
+        ).first()
     
-    def update(self, todo_id: int, todo_update: TodoUpdate) -> Optional[TodoModel]:
+    def update(self, todo_id: int, owner_id: int, todo_update: TodoUpdate) -> Optional[TodoModel]:
         """Cập nhật todo (toàn bộ)"""
-        db_todo = self.get_by_id(todo_id)
+        db_todo = self.get_by_id(todo_id, owner_id)
         if db_todo:
             db_todo.title = todo_update.title
             db_todo.description = todo_update.description
@@ -70,9 +76,9 @@ class TodoRepository:
             self.db.refresh(db_todo)
         return db_todo
     
-    def partial_update(self, todo_id: int, todo_update: TodoPartialUpdate) -> Optional[TodoModel]:
+    def partial_update(self, todo_id: int, owner_id: int, todo_update: TodoPartialUpdate) -> Optional[TodoModel]:
         """Cập nhật một phần (PATCH)"""
-        db_todo = self.get_by_id(todo_id)
+        db_todo = self.get_by_id(todo_id, owner_id)
         if db_todo:
             if todo_update.title is not None:
                 db_todo.title = todo_update.title
@@ -84,9 +90,9 @@ class TodoRepository:
             self.db.refresh(db_todo)
         return db_todo
     
-    def delete(self, todo_id: int) -> Optional[TodoModel]:
-        """Xóa todo"""
-        db_todo = self.get_by_id(todo_id)
+    def delete(self, todo_id: int, owner_id: int) -> Optional[TodoModel]:
+        """Xóa todo (check ownership)"""
+        db_todo = self.get_by_id(todo_id, owner_id)
         if db_todo:
             self.db.delete(db_todo)
             self.db.commit()

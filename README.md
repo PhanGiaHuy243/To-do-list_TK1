@@ -276,3 +276,86 @@ uvicorn main:app --reload
 
 ---
 **Status:** ✅ Hoàn thành
+
+## Cấp 5 — Authentication + Multi-User (JWT)
+
+### Mục tiêu
+Mỗi user có todos riêng, không thể xem/xóa todos của user khác.
+
+### Công nghệ
+- **JWT (JSON Web Tokens)** → Xác thực user
+- **Bcrypt** → Hash password an toàn
+- **HTTPBearer** → Lấy token từ header
+
+### Bảng Users
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    hashed_password VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Bảng Todos (cập nhật)
+```sql
+ALTER TABLE todos ADD COLUMN owner_id INTEGER NOT NULL;
+ALTER TABLE todos ADD FOREIGN KEY (owner_id) REFERENCES users(id);
+```
+
+### Auth Endpoints
+```
+POST   /api/v1/auth/register      # Đăng ký user mới
+POST   /api/v1/auth/login         # Đăng nhập, lấy JWT token
+GET    /api/v1/auth/me            # Lấy info user hiện tại
+```
+
+### Todo Endpoints (cập nhật - cần auth)
+```
+POST   /api/v1/todos              # Tạo (gắn owner = current user)
+GET    /api/v1/todos              # Lấy danh sách của current user
+GET    /api/v1/todos/{id}         # Lấy chi tiết (kiểm tra owner)
+PUT    /api/v1/todos/{id}         # Cập nhật (kiểm tra owner)
+PATCH  /api/v1/todos/{id}         # Cập nhật một phần (kiểm tra owner)
+POST   /api/v1/todos/{id}/complete# Đánh dấu done (kiểm tra owner)
+DELETE /api/v1/todos/{id}         # Xóa (kiểm tra owner)
+```
+
+### Test Cấp 5
+
+1. **Cài dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+2. **Chạy migrations:**
+```bash
+alembic upgrade head
+```
+
+3. **Start server:**
+```bash
+uvicorn main:app --reload
+```
+
+4. **Test workflow (Swagger UI):**
+   - POST /api/v1/auth/register → Tạo user A + nhận token
+   - Copy token A
+   - POST /api/v1/todos → Tạo todo (lưu ID todo A)
+   - POST /api/v1/auth/register (user B) → Nhận token B
+   - GET /api/v1/todos/{todo_A_id} với token B → ❌ 404 (không thấy)
+   - GET /api/v1/todos/{todo_A_id} với token A → ✅ 200 (thấy)
+
+### Tiêu chí đạt
+✅ Bảng users với email unique  
+✅ Hash password bằng bcrypt  
+✅ JWT token generation & validation  
+✅ Auth endpoints (register/login/me)  
+✅ Todo gắn owner_id  
+✅ Owner check (User A không xem todo B)  
+✅ HTTPBearer auto extract token  
+✅ Alembic migration users table
+
+---
+**Status:** ✅ Hoàn thành

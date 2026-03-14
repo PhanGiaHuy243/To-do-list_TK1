@@ -11,21 +11,23 @@ class TodoService:
     def __init__(self, db: Session):
         self.repository = TodoRepository(db)
     
-    def create_todo(self, todo_create: TodoCreate) -> Todo:
+    def create_todo(self, owner_id: int, todo_create: TodoCreate) -> Todo:
         """Tạo todo mới"""
-        db_todo = self.repository.create(todo_create)
+        db_todo = self.repository.create(owner_id, todo_create)
         return Todo.from_orm(db_todo)
     
     def get_todos(
         self,
+        owner_id: int,
         is_done: Optional[bool] = None,
         q: Optional[str] = None,
         sort: str = "created_at",
         limit: int = 10,
         offset: int = 0
     ) -> TodoListResponse:
-        """Lấy danh sách todos"""
+        """Lấy danh sách todos của user"""
         items, total = self.repository.get_all(
+            owner_id=owner_id,
             is_done=is_done,
             q=q,
             sort=sort,
@@ -39,25 +41,25 @@ class TodoService:
             offset=offset
         )
     
-    def get_todo(self, todo_id: int) -> Optional[Todo]:
+    def get_todo(self, todo_id: int, owner_id: int) -> Optional[Todo]:
         """Lấy todo theo ID"""
-        db_todo = self.repository.get_by_id(todo_id)
+        db_todo = self.repository.get_by_id(todo_id, owner_id)
         return Todo.from_orm(db_todo) if db_todo else None
     
-    def update_todo(self, todo_id: int, todo_update: TodoUpdate) -> Optional[Todo]:
+    def update_todo(self, todo_id: int, owner_id: int, todo_update: TodoUpdate) -> Optional[Todo]:
         """Cập nhật todo (toàn bộ)"""
-        db_todo = self.repository.update(todo_id, todo_update)
+        db_todo = self.repository.update(todo_id, owner_id, todo_update)
         return Todo.from_orm(db_todo) if db_todo else None
     
     def partial_update_todo(
-        self, todo_id: int, todo_update: TodoPartialUpdate
+        self, todo_id: int, owner_id: int, todo_update: TodoPartialUpdate
     ) -> Optional[Todo]:
         """Cập nhật một phần todo (PATCH)"""
-        db_todo = self.repository.partial_update(todo_id, todo_update)
+        db_todo = self.repository.partial_update(todo_id, owner_id, todo_update)
         return Todo.from_orm(db_todo) if db_todo else None
     
-    def delete_todo(self, todo_id: int) -> Optional[Todo]:
+    def delete_todo(self, todo_id: int, owner_id: int) -> Optional[Todo]:
         """Xóa todo"""
-        db_todo = self.repository.delete(todo_id)
+        db_todo = self.repository.delete(todo_id, owner_id)
         return Todo.from_orm(db_todo) if db_todo else None
 

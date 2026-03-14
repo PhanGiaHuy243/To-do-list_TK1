@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.core import models
-from app.routers import todos
+from app.routers import todos, auth
 
 # Tạo các bảng từ models
 Base.metadata.create_all(bind=engine)
@@ -23,6 +23,7 @@ def health_check():
     return {"status": "ok", "database": "connected"}
 
 # Include routers
+app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(todos.router, prefix=settings.API_V1_PREFIX)
 
 
