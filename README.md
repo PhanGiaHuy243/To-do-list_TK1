@@ -1,369 +1,22 @@
-# Todo List API - Cấp 7 Edition
+# To-Do List API
 
-Complete Todo List REST API built with FastAPI, SQLAlchemy, JWT Auth, and Docker.
+Dự án tạo API quản lý danh sách công việc (To-Do List) sử dụng FastAPI.
 
-## 📋 Features
+## Cấp 0 — Làm quen FastAPI (Hello To-Do)
 
-### Cấp 0-1: Basic CRUD
-- ✅ FastAPI basic setup
-- ✅ Full CRUD operations for todos
+### Mục tiêu
+Tạo API tối thiểu chạy được với 2 endpoints cơ bản.
 
-### Cấp 2: Advanced Querying
-- ✅ Input validation (Pydantic)
-- ✅ Filtering by `is_done` status
-- ✅ Full-text search by title
-- ✅ Sorting and pagination
+### Yêu cầu
+- Tạo project FastAPI
+- **Endpoint GET /health** → trả `{"status": "ok"}`
+- **Endpoint GET /** → trả message chào
 
-### Cấp 3: Clean Architecture
-- ✅ Layered architecture: Routers → Services → Repositories → Models
-- ✅ API versioning with `/api/v1` prefix
-- ✅ Dependency injection pattern
+### Hướng dẫn chạy
 
-### Cấp 4: Database Integration
-- ✅ SQLite with SQLAlchemy ORM
-- ✅ Automatic timestamps (`created_at`, `updated_at`)
-- ✅ Alembic database migrations
-- ✅ Data persistence across app restarts
-
-### Cấp 5: Authentication & Multi-User
-- ✅ User registration with email validation
-- ✅ Secure password hashing (bcrypt)
-- ✅ JWT token-based authentication
-- ✅ Role-based access control (ownership checks)
-- ✅ Todo isolation per user (cannot access other users' todos)
-
-### Cấp 6: Advanced Features
-- ✅ Tags (many-to-many relationship)
-- ✅ Due date / deadline support
-- ✅ `/todos/overdue/list` - get overdue todos
-- ✅ `/todos/today/list` - get today's todos
-
-### Cấp 7: Testing & Deployment
-- ✅ Pytest test suite with comprehensive coverage
-- ✅ Docker containerization
-- ✅ Docker Compose for local development
-- ✅ Complete documentation (this README)
-
-## 🚀 Quick Start
-
-### Option 1: Local Development (No Docker)
-
-#### Prerequisites
-- Python 3.10+
-- pip
-
-#### Setup
-
+1. **Cài đặt dependencies:**
 ```bash
-# Clone repository
-git clone <your-repo-url>
-cd todolist_TK1
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Run database migrations
-alembic upgrade head
-
-# Start development server
-uvicorn main:app --reload
-```
-
-Server will be available at **http://127.0.0.1:8000**
-- Swagger UI: **http://127.0.0.1:8000/docs**
-- ReDoc: **http://127.0.0.1:8000/redoc**
-
-### Option 2: Docker Development
-
-#### Prerequisites
-- Docker
-- Docker Compose
-
-#### Setup
-
-```bash
-# Build and start containers
-docker-compose up -d
-
-# Run migrations inside container
-docker-compose exec app alembic upgrade head
-
-# View logs
-docker-compose logs -f app
-```
-
-Server will be available at **http://localhost:8000**
-
-## 📚 API Endpoints
-
-### Authentication
-
-#### Register User
-```bash
-POST /api/v1/auth/register
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "securepassword123"
-}
-```
-
-Response:
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIs...",
-  "token_type": "bearer",
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "is_active": true,
-    "created_at": "2026-03-14T..."
-  }
-}
-```
-
-#### Login
-```bash
-POST /api/v1/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "securepassword123"
-}
-```
-
-Returns: `access_token` (use in Authorization header)
-
-#### Get Current User
-```bash
-GET /api/v1/auth/me
-Authorization: Bearer <access_token>
-```
-
-### Todos
-
-#### Create Todo
-```bash
-POST /api/v1/todos
-Authorization: Bearer <access_token>
-Content-Type: application/json
-
-{
-  "title": "Learn FastAPI",
-  "description": "Study FastAPI framework",
-  "due_date": "2026-04-01",
-  "tags": ["learning", "python"]
-}
-```
-
-#### Get All Todos
-```bash
-GET /api/v1/todos?limit=10&offset=0&sort=created_at
-Authorization: Bearer <access_token>
-```
-
-Query parameters:
-- `limit`: Number of items per page (default: 10, max: 100)
-- `offset`: Pagination offset (default: 0)
-- `sort`: Sort by field (default: `created_at`, use `-created_at` for descending)
-- `q`: Search by title
-- `is_done`: Filter by completion status (true/false)
-
-#### Get Todo by ID
-``` bash
-GET /api/v1/todos/{todo_id}
-Authorization: Bearer <access_token>
-```
-
-#### Update Todo (Full)
-```bash
-PUT /api/v1/todos/{todo_id}
-Authorization: Bearer <access_token>
-Content-Type: application/json
-
-{
-  "title": "Updated Title",
-  "description": "Updated description",
-  "is_done": false,
-  "due_date": "2026-04-15",
-  "tags": ["updated", "tag"]
-}
-```
-
-#### Partial Update Todo (PATCH)
-```bash
-PATCH /api/v1/todos/{todo_id}
-Authorization: Bearer <access_token>
-Content-Type: application/json
-
-{
-  "is_done": true
-}
-```
-
-#### Mark Todo as Complete
-```bash
-POST /api/v1/todos/{todo_id}/complete
-Authorization: Bearer <access_token>
-```
-
-#### Delete Todo
-```bash
-DELETE /api/v1/todos/{todo_id}
-Authorization: Bearer <access_token>
-```
-
-#### Get Overdue Todos
-```bash
-GET /api/v1/todos/overdue/list?limit=10&offset=0
-Authorization: Bearer <access_token>
-```
-
-#### Get Today's Todos
-```bash
-GET /api/v1/todos/today/list?limit=10&offset=0
-Authorization: Bearer <access_token>
-```
-
-## 🧪 Testing
-
-### Run All Tests
-```bash
-pytest tests/ -v
-```
-
-### Run Specific Test
-```bash
-pytest tests/test_auth.py::test_register_success -v
-```
-
-### Test Coverage
-```bash
-pytest tests/ --cov=app
-```
-
-## 📁 Project Structure
-
-```
-todolist_TK1/
-├── app/
-│   ├── core/
-│   │   ├── models.py            # SQLAlchemy models
-│   │   ├── security.py          # JWT & hashing
-│   │   ├── dependencies.py       # Dependency injection
-│   │   ├── database.py          # DB connection
-│   │   └── config.py            # Configuration
-│   ├── repositories/            # Data access layer
-│   ├── services/                # Business logic
-│   ├── routers/                 # HTTP endpoints
-│   └── schemas/                 # Request/response models
-├── migrations/                  # Database migrations
-├── tests/                       # Test suite
-├── main.py                      # Entry point
-└── README.md                    # This file
-```
-
-## 🔐 Security
-
-- ✅ Password hashing with bcrypt
-- ✅ JWT token authentication
-- ✅ Email validation
-- ✅ User ownership checks
-- ✅ Environment variable secrets
-
-## 📦 Dependencies
-
-See `requirements.txt` for full list
-
-**Key:**
-- fastapi==0.104.1
-- sqlalchemy==2.0.23
-- alembic==1.12.1
-- python-jose[cryptography]==3.3.0
-- passlib[bcrypt]==1.7.4
-- pytest==9.0.2
-
-## 🚀 Deployment
-
-### Docker
-
-```bash
-# Build
-docker build -t todolist-api .
-
-# Run
-docker run -p 8000:8000 todolist-api
-
-# Or with Compose
-docker-compose up
-```
-
-### Production Checklist
-1. Set `DEBUG=false`
-2. Use strong `SECRET_KEY`
-3. Configure CORS
-4. Use PostgreSQL instead of SQLite
-5. Enable HTTPS
-6. Set up monitoring & logging
-
-## 📝 Example Usage
-
-### 1. Register
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@test.com","password":"pass123456"}'
-```
-
-### 2. Create Todo
-```bash
-curl -X POST http://localhost:8000/api/v1/todos \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Learn API","due_date":"2026-04-01","tags":["python"]}'
-```
-
-### 3. Get Todos
-```bash
-curl http://localhost:8000/api/v1/todos \
-  -H "Authorization: Bearer <TOKEN>"
-```
-
-### 4. Get Overdue
-```bash
-curl http://localhost:8000/api/v1/todos/overdue/list \
-  -H "Authorization: Bearer <TOKEN>"
-```
-
-## 🎓 Learning Outcomes
-
-After completing this project, you'll understand:
-
-✅ FastAPI fundamentals  
-✅ REST API design patterns  
-✅ SQL & ORM (SQLAlchemy)  
-✅ Database migrations (Alembic)  
-✅ JWT authentication  
-✅ Password hashing & security  
-✅ Clean architecture & layers  
-✅ Unit testing with pytest  
-✅ Docker containerization  
-✅ Multi-user application design  
-
-## 📄 License
-
-MIT - Use freely for learning
 ```
 
 2. **Chạy server:**
@@ -706,3 +359,398 @@ uvicorn main:app --reload
 
 ---
 **Status:** ✅ Hoàn thành
+
+## Cấp 6 — Advanced Features (Tags + Due Date + Overdue/Today Endpoints)
+
+### Mục tiêu
+Thêm tags (nhãn) cho todos, deadline, và endpoints lọc todos hôm nay/quá hạn.
+
+### Bảng Tags & Many-to-Many
+```sql
+CREATE TABLE tags (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE todo_tags (
+    todo_id INTEGER NOT NULL,
+    tag_id INTEGER NOT NULL,
+    PRIMARY KEY (todo_id, tag_id),
+    FOREIGN KEY (todo_id) REFERENCES todos(id),
+    FOREIGN KEY (tag_id) REFERENCES tags(id)
+);
+```
+
+### Bảng Todos (cập nhật)
+```sql
+ALTER TABLE todos ADD COLUMN due_date DATE;  -- Ngày hạn
+```
+
+### Schema Todo (cập nhật)
+```json
+{
+  "id": 1,
+  "title": "Học FastAPI",
+  "description": "Học Docker + Deployment",
+  "is_done": false,
+  "due_date": "2026-03-20",
+  "tags": [
+    {"id": 1, "name": "learning"},
+    {"id": 2, "name": "urgent"}
+  ],
+  "owner_id": 1,
+  "created_at": "2026-03-14T10:00:00",
+  "updated_at": "2026-03-14T10:00:00"
+}
+```
+
+### Todo Endpoints (cập nhật)
+```
+POST   /api/v1/todos              # Tạo todo (có thể gắn tags + due_date)
+GET    /api/v1/todos              # Lấy danh sách (filter, sort, pagination)
+GET    /api/v1/todos/{id}         # Lấy chi tiết
+PUT    /api/v1/todos/{id}         # Cập nhật đầy đủ
+PATCH  /api/v1/todos/{id}         # Cập nhật một phần
+POST   /api/v1/todos/{id}/complete# Đánh dấu done
+DELETE /api/v1/todos/{id}         # Xóa
+POST   /api/v1/todos/{id}/restore # **NEW** - Khôi phục (Cấp 8)
+DELETE /api/v1/todos/{id}/permanent # **NEW** - Xóa vĩnh viễn (Cấp 8)
+```
+
+### Filter Advanced
+```bash
+# Lọc todos hôm nay
+GET /api/v1/todos/today/list
+
+# Lọc todos quá hạn
+GET /api/v1/todos/overdue/list
+
+# Filter theo tag
+GET /api/v1/todos?tags=learning,urgent
+
+# Filter theo due_date
+GET /api/v1/todos?due_date_from=2026-03-15&due_date_to=2026-03-20
+```
+
+### Tiêu chí đạt
+✅ Bảng tags với many-to-many relationship  
+✅ Due date support  
+✅ Tags assign/update/delete  
+✅ /today/list endpoint  
+✅ /overdue/list endpoint  
+✅ Alembic migration cho tags + due_date
+
+---
+**Status:** ✅ Hoàn thành
+
+## Cấp 7 — Testing + Docker + Documentation
+
+### Mục tiêu
+Viết comprehensive tests, containerize app, tạo đầy đủ documentation.
+
+### Testing (Pytest)
+```bash
+# Cài dependencies
+pip install pytest pytest-asyncio pytest-cov httpx
+
+# Chạy tất cả tests
+pytest tests/ -v
+
+# Với code coverage
+pytest tests/ --cov=app --cov-report=html
+
+# Test file structure
+tests/
+├── conftest.py          # Fixtures (db, client, test_user)
+├── test_auth.py         # Auth endpoints tests
+└── test_todos.py        # Todo CRUD + advanced tests
+```
+
+### Test Coverage
+- ✅ Registration (success, duplicate, invalid email)
+- ✅ Login (success, wrong password)
+- ✅ Todo CRUD (create, read, update, delete)
+- ✅ Multi-user isolation
+- ✅ Overdue/today filtering
+- ✅ Authorization checks
+- **25+ test cases**
+
+### Docker Support
+```bash
+# Build image
+docker build -t todolist-api:latest .
+
+# Run container
+docker run -p 8000:8000 todolist-api:latest
+
+# Docker Compose
+docker-compose up -d
+```
+
+### Files
+- `Dockerfile` - Multi-stage build, production-ready
+- `docker-compose.yml` - Include FastAPI + SQLite volume
+- `.dockerignore` - Exclude unnecessary files
+
+### Documentation
+- `README.md` **tổng hợp tất cả Cấp 0-8** với:
+  - Architecture diagram (clean code layers)
+  - Quick start (local + Docker)
+  - All 20 endpoints with examples
+  - Testing guide
+  - Deployment checklist
+  - Project structure
+
+### Tiêu chí đạt
+✅ Pytest suite với 25+ test cases  
+✅ In-memory SQLite for testing  
+✅ Test fixtures (db, client, user, token)  
+✅ Dockerfile multi-stage  
+✅ docker-compose.yml  
+✅ Comprehensive README  
+✅ Code examples for every endpoint
+
+---
+**Status:** ✅ Hoàn thành
+
+## Cấp 8 — Soft Delete + CI/CD Pipeline
+
+### Mục tiêu
+Implement soft delete (archive todos instead of removing), GitHub Actions CI/CD automation.
+
+### Soft Delete Feature
+```sql
+ALTER TABLE todos ADD COLUMN deleted_at DATETIME;
+CREATE INDEX idx_deleted_at ON todos(deleted_at);
+```
+
+### Soft Delete Behavior
+- **Xóa bình thường** → Set `deleted_at = NOW()` (không xóa DB)
+- **Khôi phục** → Set `deleted_at = NULL`
+- **Xóa vĩnh viễn** → DELETE FROM database
+- **GET queries** → Tự động filter `WHERE deleted_at IS NULL`
+
+### New Endpoints
+```
+POST   /api/v1/todos/{id}/restore     # Khôi phục deleted todo
+DELETE /api/v1/todos/{id}/permanent   # Xóa vĩnh viễn (hard delete)
+```
+
+### Bảng Todos (final)
+```sql
+CREATE TABLE todos (
+    id INTEGER PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    is_done BOOLEAN DEFAULT 0,
+    due_date DATE,
+    owner_id INTEGER NOT NULL,
+    deleted_at DATETIME,  # **NEW - for soft delete**
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (owner_id) REFERENCES users(id)
+);
+```
+
+### CI/CD Pipeline (GitHub Actions)
+```yaml
+# .github/workflows/ci-cd.yml
+Jobs:
+  1. test       - Run pytest, check coverage, lint (flake8)
+  2. security   - Run Bandit security scanner
+  3. build      - Build Docker image, test it
+```
+
+### Migration Path
+```
+Migration 001: Create todos table
+Migration 002: Add users + owner_id (batch_alter for SQLite)
+Migration 003: Add tags table + todo_tags + due_date
+Migration 004: Add deleted_at (soft delete column) ← **NEW**
+```
+
+### Workflow
+1. Push code to GitHub
+2. GitHub Actions triggers automatically
+3. Tests run → Security check → Build Docker image
+4. If all pass → Ready for deployment
+
+### Tiêu chí đạt
+✅ Soft delete logic (deleted_at column + index)  
+✅ Restore & permanent delete endpoints  
+✅ All queries filter soft-deleted items  
+✅ Alembic migration 004  
+✅ GitHub Actions CI/CD workflow  
+✅ Automated testing on every push  
+✅ Security scanning (Bandit)  
+✅ Docker build validation
+
+---
+**Status:** ✅ Hoàn thành
+
+---
+
+## 📊 Project Architecture
+
+### 5-Layer Clean Architecture
+```
+HTTP Layer (FastAPI Routes)
+    ↓
+Service Layer (Business Logic)
+    ↓
+Repository Layer (Data Access)
+    ↓
+ORM Models (SQLAlchemy)
+    ↓
+Database (SQLite)
+```
+
+### Directory Structure
+```
+todolist_TK1/
+├── app/
+│   ├── core/
+│   │   ├── config.py          # Environment settings
+│   │   ├── database.py        # SQLAlchemy setup
+│   │   ├── models.py          # ORM models (User, Todo, Tag)
+│   │   ├── security.py        # JWT + password hashing
+│   │   └── dependencies.py    # Dependency injection
+│   ├── schemas/
+│   │   ├── auth.py            # Pydantic models for auth
+│   │   └── todo.py            # Pydantic models for todos
+│   ├── repositories/
+│   │   ├── user.py            # User data access
+│   │   ├── todo.py            # Todo data access (soft delete logic)
+│   │   └── tag.py             # Tag data access
+│   ├── services/
+│   │   ├── auth.py            # Auth business logic
+│   │   └── todo.py            # Todo business logic
+│   └── routers/
+│       ├── auth.py            # Auth endpoints
+│       └── todos.py           # Todo endpoints
+├── migrations/
+│   └── versions/
+│       ├── 001_create_todos.py
+│       ├── 002_add_users.py
+│       ├── 003_add_tags.py
+│       └── 004_add_soft_delete.py
+├── tests/
+│   ├── conftest.py            # Test fixtures
+│   ├── test_auth.py           # Auth tests
+│   └── test_todos.py          # Todo tests
+├── main.py                    # FastAPI app entry point
+├── requirements.txt           # Dependencies
+├── alembic.ini                # Alembic config
+├── Dockerfile                 # Docker image
+├── docker-compose.yml         # Docker orchestration
+├── pytest.ini                 # Pytest config
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml          # GitHub Actions pipeline
+└── README.md                  # This file
+```
+
+## 🚀 API Summary (20 Endpoints)
+
+### Health Check (2)
+- GET / → App status
+- GET /health → Server health
+
+### Authentication (3)
+- POST /api/v1/auth/register → Create user
+- POST /api/v1/auth/login → Get JWT token
+- GET /api/v1/auth/me → Current user info
+
+### Todos CRUD (7)
+- POST /api/v1/todos → Create
+- GET /api/v1/todos → List (filter + sort + pagination)
+- GET /api/v1/todos/{id} → Get one
+- PUT /api/v1/todos/{id} → Update full
+- PATCH /api/v1/todos/{id} → Update partial
+- POST /api/v1/todos/{id}/complete → Mark done
+- DELETE /api/v1/todos/{id} → Soft delete
+
+### Advanced Todos (6)
+- GET /api/v1/todos/today/list → Today's todos
+- GET /api/v1/todos/overdue/list → Overdue todos
+- POST /api/v1/todos/{id}/restore → Restore deleted (Cấp 8)
+- DELETE /api/v1/todos/{id}/permanent → Hard delete (Cấp 8)
+
+**Total: 20 endpoints**
+
+## 📦 Tech Stack
+
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| **Framework** | FastAPI | 0.104.1 |
+| **Server** | Uvicorn | 0.24.0 |
+| **Database** | SQLite | Built-in |
+| **ORM** | SQLAlchemy | 2.0.23 |
+| **Migrations** | Alembic | 1.12.1 |
+| **Authentication** | python-jose JWT | 3.3.0 |
+| **Password** | bcrypt/passlib | 4.1.2 / 1.7.4 |
+| **Validation** | Pydantic | 2.5.0 |
+| **Testing** | pytest | 9.0.2 |
+| **Container** | Docker | Latest |
+| **Environment** | python-dotenv | 1.2.2 |
+
+## 🎯 Key Features
+
+✅ **Multi-layer Architecture** - Clean code separation  
+✅ **Database Migrations** - Alembic for version control  
+✅ **JWT Authentication** - Secure token-based auth  
+✅ **Multi-user Support** - Data isolation per user  
+✅ **Advanced Filtering** - Today, overdue, tags, dates  
+✅ **Soft Delete** - Archive instead of destroy  
+✅ **Comprehensive Tests** - 25+ pytest cases  
+✅ **Docker Ready** - Container & compose files  
+✅ **CI/CD Pipeline** - GitHub Actions automation  
+✅ **Production-Ready** - Full documentation
+
+## 📍 Quick Start
+
+### Local Development
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Initialize database
+alembic upgrade head
+
+# 3. Run server
+uvicorn main:app --reload
+
+# 4. Access API
+# - Swagger UI: http://localhost:8000/docs
+# - ReDoc: http://localhost:8000/redoc
+```
+
+### Docker
+```bash
+docker-compose up -d
+# API available at http://localhost:8000
+```
+
+### Testing
+```bash
+pytest tests/ -v --cov=app
+```
+
+## 🔐 Security Features
+
+- ✅ Password hashing with bcrypt
+- ✅ JWT token authentication
+- ✅ HTTPBearer scheme
+- ✅ Owner-based authorization
+- ✅ Bandit security scanning
+- ✅ SQL injection prevention (SQLAlchemy)
+
+## 📝 License
+
+Educational project - Free to use and modify
+
+---
+
+**Project Status: ✅ COMPLETE (Cấp 0-8)**  
+*Last Updated: March 14, 2026*
