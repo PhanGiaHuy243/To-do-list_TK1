@@ -44,9 +44,12 @@ class TodoRepository:
         limit: int = 10,
         offset: int = 0
     ) -> Tuple[list[TodoModel], int]:
-        """Lấy danh sách todos của user"""
-        # Start with owner filter
-        query = self.db.query(TodoModel).filter(TodoModel.owner_id == owner_id)
+        """Lấy danh sách todos của user (không bao gồm deleted)"""
+        # Start with owner filter and NOT deleted filter
+        query = self.db.query(TodoModel).filter(
+            TodoModel.owner_id == owner_id,
+            TodoModel.deleted_at == None  # Only non-deleted todos
+        )
         
         # Filter by is_done
         if is_done is not None:
@@ -71,10 +74,11 @@ class TodoRepository:
         return items, total
     
     def get_by_id(self, todo_id: int, owner_id: int) -> Optional[TodoModel]:
-        """Lấy todo theo ID (check ownership)"""
+        """Lấy todo theo ID (check ownership, không bao gồm deleted)"""
         return self.db.query(TodoModel).filter(
             TodoModel.id == todo_id,
-            TodoModel.owner_id == owner_id
+            TodoModel.owner_id == owner_id,
+            TodoModel.deleted_at == None  # Only non-deleted
         ).first()
     
     def update(self, todo_id: int, owner_id: int, todo_update: TodoUpdate) -> Optional[TodoModel]:
@@ -126,32 +130,59 @@ class TodoRepository:
         return db_todo
     
     def delete(self, todo_id: int, owner_id: int) -> Optional[TodoModel]:
-        """Xóa todo (check ownership)"""
+        """Soft delete todo (đánh dấu deleted_at, không xóa dữ liệu)"""
         db_todo = self.get_by_id(todo_id, owner_id)
+        if db_todo:
+            db_todo.deleted_at = datetime.now()
+            self.db.commit()
+            self.db.refresh(db_todo)
+        return db_todo
+    
+    def restore(self, todo_id: int, owner_id: int) -> Optional[TodoModel]:
+        """Restore deleted todo"""
+        db_todo = self.db.query(TodoModel).filter(
+            TodoModel.id == todo_id,
+            TodoModel.owner_id == owner_id,
+            TodoModel.deleted_at != None  # Only deleted todos
+        ).first()
+        if db_todo:
+            db_todo.deleted_at = None
+            self.db.commit()
+            self.db.refresh(db_todo)
+        return db_todo
+    
+    def permanent_delete(self, todo_id: int, owner_id: int) -> Optional[TodoModel]:
+        """Xóa vĩnh viễn (thực sự xóa khỏi database)"""
+        db_todo = self.db.query(TodoModel).filter(
+            TodoModel.id == todo_id,
+            TodoModel.owner_id == owner_id
+        ).first()
         if db_todo:
             self.db.delete(db_todo)
             self.db.commit()
         return db_todo
     
     def get_overdue(self, owner_id: int, limit: int = 10, offset: int = 0) -> Tuple[list[TodoModel], int]:
-        """Lấy todos quá hạn (due_date < today, is_done = False)"""
+        """Lấy todos quá hạn (không bao gồm deleted)"""
         today = date.today()
         query = self.db.query(TodoModel).filter(
             TodoModel.owner_id == owner_id,
             TodoModel.is_done == False,
-            TodoModel.due_date < today
+            TodoModel.due_date < today,
+            TodoModel.deleted_at == None  # Only non-deleted
         )
         total = query.count()
         items = query.order_by(TodoModel.due_date).offset(offset).limit(limit).all()
         return items, total
     
     def get_today(self, owner_id: int, limit: int = 10, offset: int = 0) -> Tuple[list[TodoModel], int]:
-        """Lấy todos hôm nay (due_date = today, is_done = False)"""
+        """Lấy todos hôm nay (không bao gồm deleted)"""
         today = date.today()
         query = self.db.query(TodoModel).filter(
             TodoModel.owner_id == owner_id,
             TodoModel.is_done == False,
-            TodoModel.due_date == today
+            TodoModel.due_date == today,
+            TodoModel.deleted_at == None  # Only non-deleted
         )
         total = query.count()
         items = query.order_by(TodoModel.created_at).offset(offset).limit(limit).all()

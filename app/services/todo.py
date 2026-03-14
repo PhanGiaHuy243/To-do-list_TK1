@@ -59,8 +59,18 @@ class TodoService:
         return Todo.from_orm(db_todo) if db_todo else None
     
     def delete_todo(self, todo_id: int, owner_id: int) -> Optional[Todo]:
-        """Xóa todo"""
+        """Soft delete todo"""
         db_todo = self.repository.delete(todo_id, owner_id)
+        return Todo.from_orm(db_todo) if db_todo else None
+    
+    def restore_todo(self, todo_id: int, owner_id: int) -> Optional[Todo]:
+        """Restore deleted todo"""
+        db_todo = self.repository.restore(todo_id, owner_id)
+        return Todo.from_orm(db_todo) if db_todo else None
+    
+    def permanent_delete_todo(self, todo_id: int, owner_id: int) -> Optional[Todo]:
+        """Xóa vĩnh viễn (hard delete)"""
+        db_todo = self.repository.permanent_delete(todo_id, owner_id)
         return Todo.from_orm(db_todo) if db_todo else None
     
     def get_overdue_todos(

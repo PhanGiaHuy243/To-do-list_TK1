@@ -41,6 +41,7 @@ class TodoModel(Base):
     is_done = Column(Boolean, default=False, index=True)
     due_date = Column(Date, nullable=True, index=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    deleted_at = Column(DateTime, nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
     

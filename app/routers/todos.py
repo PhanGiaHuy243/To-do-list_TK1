@@ -132,10 +132,37 @@ def delete_todo(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    """Xóa todo"""
+    """Soft delete todo (đánh dấu đã xóa)"""
     service = TodoService(db)
     todo = service.delete_todo(todo_id, current_user.id)
     if not todo:
         raise HTTPException(status_code=404, detail="Todo không tìm thấy")
     return {"message": f"Đã xóa todo '{todo.title}'"}
+
+@router.post("/{todo_id}/restore")
+def restore_todo(
+    todo_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Restore deleted todo"""
+    service = TodoService(db)
+    todo = service.restore_todo(todo_id, current_user.id)
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo đã xóa không tìm thấy")
+    return todo
+
+@router.delete("/{todo_id}/permanent")
+def permanent_delete_todo(
+    todo_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Xóa vĩnh viễn (hard delete)"""
+    service = TodoService(db)
+    todo = service.permanent_delete_todo(todo_id, current_user.id)
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo không tìm thấy")
+    return {"message": f"Đã xóa vĩnh viễn todo '{todo.title}'"}
+
 
